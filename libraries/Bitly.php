@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Kohana_Bitly {
+class Bitly_Core {
 	
 	public static $default 		= 'default';
 	public static $instances 	= array();
@@ -18,7 +18,8 @@ class Kohana_Bitly {
 		{
 			if ($config === NULL)
 			{
-				$config = Kohana::config('bitly')->$name;
+				$config = Kohana::config('bitly');
+				$config = $config[$name];
 			}
 			
 			new Bitly($name, $config);
@@ -38,12 +39,11 @@ class Kohana_Bitly {
 		Bitly::$instances[$name] = $this;
 	}
 	
-	public function shorten($long_url)
-	{
-		if (isset($this->cache[$long_url]))
-		{
+	public function shorten($long_url) {
+		if (isset($this->cache[$long_url])) {
 			return $this->cache[$long_url];
 		}
+		
 		try
 		{
 			$this->cache[$long_url] = $this->_request('shorten', array('longUrl' => $long_url));
@@ -51,8 +51,9 @@ class Kohana_Bitly {
 		}
 		catch (Exception $e)
 		{
-			Kohana::$log->add(Kohana::ERROR, "Bit.ly error: {$e->getMessage()} ($long_url)");
+			Kohana::log('error', "Bit.ly error: {$e->getMessage()} ($long_url)");
 		}
+		
 		return $long_url;
 	}
 	
@@ -65,18 +66,15 @@ class Kohana_Bitly {
 		
 		$response = json_decode(file_get_contents(self::$base_url.$method.'?'.http_build_query($params)), TRUE);
 		
-		if (Arr::get($response, 'status_code') == 200)
-		{
+		if($response['status_code'] == 200) {
 			return $response['data'];
-		}
-		else
-		{
-			throw new Bitly_Exception(Arr::get($response, 'status_txt'));
+		} else {
+			throw new Bitly_Exception($response['status_txt']);
 		}
 	}
 	
 }
 
-class Kohana_Bitly_Exception extends Exception {
+class Bitly_Exception extends Exception {
 	
 }
